@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Xcode per-user files and build output
+xcuserdata/
+DerivedData/
+build/
+.build/
+*.xcuserstate
+
+# Personal data exported from the app
+phrases.csv
