@@ -49,16 +49,27 @@ struct ContentView: View {
             List(phrases) { phrase in // A scrollable list with one row per saved phrase
                 VStack(alignment: .leading, spacing: 4) {
                     Text(phrase.text)
-                    ForEach(phrase.translations) { translation in // One line per candidate's result
-                        if let error = translation.error { // Failed: show why, in red
-                            Text("\(translation.engine): \(error)")
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                        } else {
-                            Text("\(translation.engine) (\(Int(translation.durationMs)) ms): \(translation.text)") // e.g. "Apple Translation (120 ms): hallo"
+                    ForEach(phrase.translations.filter { $0.error == nil }) { translation in // One line per successful result. Failures stay in the database but aren't shown
+                        HStack {
+                            Text("\(translation.engine) (\(Int(translation.durationMs)) ms): \(translation.text)") // e.g. "Whisper translate (120 ms): hello"
                                 .font(.callout)
                                 .foregroundStyle(.blue)
+                            Spacer() // Pushes the buttons to the right edge
+                            Button {
+                                try? store?.rate(translation, isCorrect: true)
+                            } label: {
+                                Image(systemName: translation.isCorrect == true ? "checkmark.circle.fill" : "checkmark.circle") // Filled when this is the chosen answer
+                                    .foregroundStyle(translation.isCorrect == true ? .green : .secondary)
+                            }
+                            Button {
+                                try? store?.rate(translation, isCorrect: false)
+                            } label: {
+                                Image(systemName: translation.isCorrect == false ? "xmark.circle.fill" : "xmark.circle")
+                                    .foregroundStyle(translation.isCorrect == false ? .red : .secondary)
+                            }
                         }
+                        .buttonStyle(.borderless) // Without this, a List row turns into one big button and both taps hit the same action
+                        .font(.title3) // Makes the icons big enough to tap easily
                     }
                     Text(phrase.createdAt, style: .time) // Shows just the time, e.g. "14:32"
                         .font(.caption)
@@ -82,7 +93,7 @@ struct ContentView: View {
                 transcript = try await transcriber.transcribe(url: url)
                 if let phrase = try store?.save(text: transcript, language: transcriber.language) { // Save the phrase. nil = nothing saved (silence, or no database)
                     phrases = try store?.fetchAll() ?? [] // Reload the list so the new phrase shows up at the top
-                    let translators: [any Translator] = [AppleTranslator(), WhisperTranslator(transcriber: transcriber)] // The candidates to compare. Add new ones here
+                    let translators: [any Translator] = [WhisperTranslator(transcriber: transcriber)] // The candidates to compare. Add new ones here (AppleTranslator() is off for now)
                     try await store?.translate(phrase, audio: url, with: translators, to: targetLanguage) // Run all candidates; the row updates by itself when results are added
                 }
             } catch {

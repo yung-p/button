@@ -11,6 +11,7 @@ final class PhraseTranslation {
     var error: String? // Why it failed, or nil if it worked. Failures are kept too, so we can compare candidates fairly
     var durationMs: Double // How long the translation took, in milliseconds
     var createdAt: Date
+    var isCorrect: Bool? = nil // Your rating: nil = not rated yet, true = right, false = wrong. Optional, so existing rows simply start as nil
     var phrase: Phrase? // The phrase this belongs to. SwiftData links the two tables through this
 
     init(engine: String, targetLanguage: String, text: String, error: String?, durationMs: Double, createdAt: Date = .now) {

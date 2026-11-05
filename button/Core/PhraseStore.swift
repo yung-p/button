@@ -48,4 +48,9 @@ final class PhraseStore {
         }
         try context.save() // Write all results to disk at once
     }
+
+    func rate(_ translation: PhraseTranslation, isCorrect: Bool) throws { // Saves your right/wrong answer for one translation
+        translation.isCorrect = isCorrect // The row is already in the database, so changing it is enough; SwiftData notices
+        try context.save()
+    }
 }

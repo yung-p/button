@@ -72,7 +72,7 @@ The only screen.
 - **Pill → circle:** a single `Capsule` is a 140×28 pill while loading and becomes a 200×200 circle when ready. A capsule as wide as it is tall *is* a circle, and the change animates with a spring.
 - **Loading:** while loading, it shows `LoadingPill` with `transcriber.loadProgress`.
 - **Hold to record:** a `DragGesture(minimumDistance: 0)` gives "finger down" (start recording, darker red) and "finger up" (stop recording, transcribe).
-- **After a recording:** shows the transcript, saves it as a `Phrase`, runs all translation candidates, and lists every saved phrase with its translations. Each translation shows its timing, or its error in red.
+- **After a recording:** shows the transcript, saves it as a `Phrase`, runs all translation candidates, and lists every saved phrase with its successful translations and their timing. Failed translations are kept in the database but not shown. Each translation has ✓ / ✗ buttons to rate it right or wrong.
 - **At startup (`.task`):** loads saved phrases, loads Whisper, triggers the morph, then asks for mic permission.
 
 #### `UI/LoadingPill.swift`
@@ -104,7 +104,7 @@ The `Phrase` table: `text`, `createdAt`, `language`, plus `translations`, which 
 #### `Core/PhraseTranslation.swift`
 The `PhraseTranslation` table: one translation attempt of one phrase by one model.
 
-- Fields: `engine`, `targetLanguage`, `text`, `error`, `durationMs`, `createdAt`, `phrase`.
+- Fields: `engine`, `targetLanguage`, `text`, `error`, `durationMs`, `createdAt`, `isCorrect` (your rating: `nil` = not rated), `phrase`.
 - Failures are stored too, so the comparison is fair.
 
 #### `Core/PhraseStore.swift`
@@ -113,6 +113,7 @@ Opens the database and reads and writes it. It runs on the main thread (`@MainAc
 - `save(text:language:)` saves a phrase (skips empty text) and returns it.
 - `fetchAll()` returns all phrases, newest first.
 - `translate(_:audio:with:to:)` runs each candidate in turn, times it, and saves a `PhraseTranslation` per candidate.
+- `rate(_:isCorrect:)` saves your right/wrong rating for one translation.
 
 ### Core: translation candidates
 
@@ -120,7 +121,7 @@ Opens the database and reads and writes it. It runs on the main thread (`@MainAc
 The `Translator` protocol that every candidate follows: a `name` and `translate(_:audio:from:to:)`. Candidates get both the text and the recording, so text-based and audio-based models fit the same shape.
 
 #### `Core/AppleTranslator.swift`
-Candidate: **Apple Translation** (`TranslationSession`), free and on-device.
+Candidate: **Apple Translation** (`TranslationSession`), free and on-device. **Currently switched off** (not in the candidate list in `ContentView`).
 
 - Both languages must be downloaded on the device: Settings → Apps → Translate.
 - **It doesn't work in the Simulator** ("translation isn't supported on the current device"), so test it on a real iPhone.
